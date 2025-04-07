@@ -157,7 +157,7 @@ QString generateTokenFile(QString count2, int hoursToExpire) {
 
     // Create file name based on timestamp for backup and export
     #ifdef __APPLE__
-    QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", "/Applications/EBANKER.app/Contents/MacOS/files/", "Token File (*.iou)");
+    QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", "/Applications/VOKO.app/Contents/MacOS/files/", "Token File (*.iou)");
      #else
     QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", "", "Token File (*.iou)");
     #endif
@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
     //load config file with last used database
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 #ifdef __APPLE__
-    db.setDatabaseName("/Applications/EBANKER.app/Contents/MacOS/tokens.db");
+    db.setDatabaseName("/Applications/VOKO.app/Contents/MacOS/tokens.db");
 #else
        db.setDatabaseName("tokens.db");
 #endif
