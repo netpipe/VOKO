@@ -307,9 +307,14 @@ void removeTransactionFileByMD5(const QString &md5) {
     }
 }
 
-QString importTokenFile() {
-    QString filePath = QFileDialog::getOpenFileName(nullptr, "Import Token File", "", "Token File (*.iou)");
+QString importTokenFile(QString file2) {
+    QString filePath;
+    if (file2.isEmpty()){
+     filePath = QFileDialog::getOpenFileName(nullptr, "Import Token File", "", "Token File (*.iou)");
     if (filePath.isEmpty()) return "Import cancelled.";
+    }else{
+        filePath = file2;
+    }
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return "Failed to open file.";
@@ -465,6 +470,8 @@ int main(int argc, char *argv[]) {
     QWidget window;
     window.setWindowTitle("Secure IOU Token System");
     auto *layout = new QVBoxLayout(&window);
+        QLineEdit *tokengen =  new QLineEdit;
+
 
         QCommandLineParser parser;
         parser.setApplicationDescription("Secure IOU Token System");
@@ -508,12 +515,12 @@ int main(int argc, char *argv[]) {
 
     // Command-line actions
     if (parser.isSet(generateAllOpt)) {
-        bruteForceTokenPool();
+        bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
         qDebug() << "Generated all tokens.";
     }
 
     if (parser.isSet(selectValidOpt)) {
-  //      selectValidTokens();
+        selectValidTokens(tokengen->text().toInt());
         qDebug() << "Selected valid tokens.";
     }
 
@@ -522,9 +529,8 @@ int main(int argc, char *argv[]) {
         qDebug() << validateTokenRedemption(token);
     }
 
-    if (parser.isSet(exportOpt)) {
-        int count = parser.value(exportOpt).toInt();
-  //      qDebug() << generateTokenFile(count,24);
+    if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
+        qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());
     }
 
     if (parser.isSet(importOpt)) {
@@ -534,8 +540,8 @@ int main(int argc, char *argv[]) {
         if (file.exists()) {
          //   QFileDialog::setFileMode(QFileDialog::ExistingFile);
         //    QFileDialog::setOption(QFileDialog::DontUseNativeDialog);
-        //    QFileDialog::selectFile(filePath);
-            qDebug() << importTokenFile();
+         //   QFileDialog::selectFile(filePath);
+            qDebug() << importTokenFile(filePath);
         } else {
             qDebug() << "Import file not found:" << filePath;
         }
@@ -559,7 +565,7 @@ int main(int argc, char *argv[]) {
     auto *genValidBtn = new QPushButton("Select Valid Tokens");
 
     tokenstxt =  new QLineEdit;
-    QLineEdit *tokengen =  new QLineEdit;
+
     //   QLineEdit *tokenstxt =  new QLineEdit;
     QLineEdit *hours =  new QLineEdit;
     hours->setText("24");
@@ -634,7 +640,7 @@ int main(int argc, char *argv[]) {
         output->appendPlainText(generateTokenFile(tokenstxt->text(),hours->text().toInt()));
     });
     QObject::connect(importBtn, &QPushButton::clicked, [&]() {
-        output->appendPlainText(importTokenFile());
+        output->appendPlainText(importTokenFile(""));
     });
 
     window.resize(500, 500);
