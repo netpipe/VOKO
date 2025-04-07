@@ -1,4 +1,5 @@
 # VOKO
+![ScreenShot](./ss.png)
 token system with batch verification for added security, can function as IOU's , vouchers or digital notes or weighted votes even.
 
 WIP portable token system for lending and borrowing
