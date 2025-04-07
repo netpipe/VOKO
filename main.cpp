@@ -279,7 +279,7 @@ void bruteForceTokenPool(int total = 100000, int batchSize = 1000) {
 
     QSet<QString> uniqueTokens;
     while (uniqueTokens.size() < total) {
-        uniqueTokens.insert(generateRandomToken(12));
+        uniqueTokens.insert(generateRandomToken(25));
     }
 
     QStringList tokens = uniqueTokens.values();
