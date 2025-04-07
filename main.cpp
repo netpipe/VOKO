@@ -18,6 +18,9 @@
 #include <QDebug>
 #include <QSplitter>
 #include <QMessageBox>
+#include <QFileDialog>
+#include <QCommandLineParser>
+#include <QCommandLineOption>
 
 QLabel *tokensleftlbl;
 QLineEdit *tokenstxt;
@@ -463,6 +466,31 @@ int main(int argc, char *argv[]) {
     window.setWindowTitle("Secure IOU Token System");
     auto *layout = new QVBoxLayout(&window);
 
+        QCommandLineParser parser;
+        parser.setApplicationDescription("Secure IOU Token System");
+        parser.addHelpOption();
+        parser.addVersionOption();
+
+        // Define options
+        QCommandLineOption generateAllOpt("generate-all", "Generate all tokens");
+        QCommandLineOption selectValidOpt("select-valid", "Select valid tokens");
+        QCommandLineOption redeemOpt("redeem", "Redeem a token", "token");
+        QCommandLineOption exportOpt("export", "Export N tokens", "count");
+        QCommandLineOption eTimeOpt("etime", "Export time", "count");
+        QCommandLineOption importOpt("import", "Import tokens from file", "file");
+        QCommandLineOption headlessOpt("headless", "Run without GUI");
+
+        parser.addOption(generateAllOpt);
+        parser.addOption(selectValidOpt);
+        parser.addOption(redeemOpt);
+        parser.addOption(exportOpt);
+                parser.addOption(eTimeOpt);
+        parser.addOption(importOpt);
+        parser.addOption(headlessOpt);
+
+        parser.process(app);
+
+
     //load config file with last used database
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 #ifdef __APPLE__
@@ -476,6 +504,47 @@ int main(int argc, char *argv[]) {
     init.exec("CREATE TABLE IF NOT EXISTS all_tokens (token TEXT PRIMARY KEY, token_expiry DATETIME)");
     init.exec("CREATE TABLE IF NOT EXISTS valid_tokens (token TEXT PRIMARY KEY, redeemed INTEGER DEFAULT 0, token_expiry DATETIME, FOREIGN KEY(token) REFERENCES all_tokens(token))");
     init.exec("CREATE TABLE IF NOT EXISTS transaction_files (file_path TEXT, backup_path TEXT, md5_checksum TEXT, expiry_time DATETIME)");
+
+
+    // Command-line actions
+    if (parser.isSet(generateAllOpt)) {
+        bruteForceTokenPool();
+        qDebug() << "Generated all tokens.";
+    }
+
+    if (parser.isSet(selectValidOpt)) {
+  //      selectValidTokens();
+        qDebug() << "Selected valid tokens.";
+    }
+
+    if (parser.isSet(redeemOpt)) {
+        QString token = parser.value(redeemOpt);
+        qDebug() << validateTokenRedemption(token);
+    }
+
+    if (parser.isSet(exportOpt)) {
+        int count = parser.value(exportOpt).toInt();
+  //      qDebug() << generateTokenFile(count,24);
+    }
+
+    if (parser.isSet(importOpt)) {
+        QString filePath = parser.value(importOpt);
+        // Temporarily override QFileDialog:
+        QFile file(filePath);
+        if (file.exists()) {
+         //   QFileDialog::setFileMode(QFileDialog::ExistingFile);
+        //    QFileDialog::setOption(QFileDialog::DontUseNativeDialog);
+        //    QFileDialog::selectFile(filePath);
+            qDebug() << importTokenFile();
+        } else {
+            qDebug() << "Import file not found:" << filePath;
+        }
+    }
+
+    if (parser.isSet(headlessOpt)) {
+        return 0;  // Skip GUI
+    }
+
 
     // Reset expired tokens at app startup
     restoreExpiredTokensFromBackup();
