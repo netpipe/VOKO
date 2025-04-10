@@ -28,7 +28,9 @@ QLabel *tokensleftlbl;
 QLineEdit *tokenstxt;
 QCalendarWidget *test2;
 QSettings *settings;
+QLineEdit *hours;
 
+//returned value of tokens might be handy for a voting system or to show how much change it has.
 
 int getTokensLeft() {
     QSqlQuery query;
@@ -122,10 +124,17 @@ QString validateTokenRedemption(const QString &token) {
     update.exec();
     return "Token successfully redeemed.";
 }
+
 int hoursUntilDate(const QDate &targetDate) {
     QDate today = QDate::currentDate();
     int daysDiff = today.daysTo(targetDate);
-    return daysDiff * 24;
+    if (daysDiff == 0 && hours->text() != "" ){
+
+    return hours->text().toInt();
+    } else {
+            hours->setText(QString::number(daysDiff * 24));
+    }
+   // return daysDiff * 24;
 }
 
 
@@ -133,20 +142,6 @@ QString generateTokenFile(QString count2, int hoursToExpire) {
    settings->setValue("year", test2->selectedDate().year());
     settings->setValue("month", test2->selectedDate().month());
      settings->setValue("day", test2->selectedDate().day());
-  // qDebug() << test2->selectedDate().currentDate(); // save settings
-   // QString text = QInputDialog::getText(0,"Title","text");
-
-     int year = test2->selectedDate().year();
-     int day = test2->selectedDate().day();
-     int month = test2->selectedDate().month();
-
-     QDate datetest = test2->selectedDate();
-   //  datetest.set
-    //  qDebug() << day;
-    //  qDebug() << datetest ;
-   //  datetest.fromString(dates.toLatin1() );
-     datetest.setDate(year,month,day);
-
            //  qDebug() << hoursUntil(datetest);
    int count = count2.toInt();
    int counted=0;
@@ -465,18 +460,33 @@ QString importTokenFile(QString file2) {
 
                     //     qDebug() << validateTokenRedemption(token);
                       if ( validateTokenRedemption(token) == "Token successfully redeemed." ){
-                        QSqlQuery restoreQuery;
-                        restoreQuery.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
-                       restoreQuery.bindValue(":token", token);
+                    //    QSqlQuery restoreQuery;
+                   //     restoreQuery.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
+                    //   restoreQuery.bindValue(":token", token);
                      //   restoreQuery.exec();
                      //   qDebug() << token ;
                          // qDebug() << "redeem";
                        redeemed = redeemed + 1;
+
+                       QSqlQuery update;
+                       update.prepare(R"(
+                           UPDATE valid_tokens
+                           SET redeemed = 0,
+                               returned_at = :returnedAt,
+                               returned_value = :value
+                           WHERE token = :token AND redeemed = 0
+                       )");
+                       update.bindValue(":returnedAt", QDateTime::currentDateTime().toString(Qt::ISODate));
+                       update.bindValue(":value", 1.0); // or whatever portion is returned
+                       update.bindValue(":token", token);
+                       update.exec();
+
                           }
                     }
 
                     backupFile.close();
                     removeTransactionFileByMD5(originalMD5);
+
                 } else {
                   //  qDebug() << "MD5 checksum mismatch for backup file: " << backupPath;
                 }
@@ -491,6 +501,7 @@ QString importTokenFile(QString file2) {
         // if they match do cashout otherwise message invalid
     return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed);
 }
+
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -538,6 +549,8 @@ int main(int argc, char *argv[]) {
     init.exec("CREATE TABLE IF NOT EXISTS all_tokens (token TEXT PRIMARY KEY, token_expiry DATETIME)");
     init.exec("CREATE TABLE IF NOT EXISTS valid_tokens (token TEXT PRIMARY KEY, redeemed INTEGER DEFAULT 0, token_expiry DATETIME, FOREIGN KEY(token) REFERENCES all_tokens(token))");
     init.exec("CREATE TABLE IF NOT EXISTS transaction_files (file_path TEXT, backup_path TEXT, md5_checksum TEXT, expiry_time DATETIME)");
+    init.exec("ALTER TABLE valid_tokens ADD COLUMN returned_at TEXT");      //   -- ISO datetime string
+    init.exec("ALTER TABLE valid_tokens ADD COLUMN returned_value REAL");  //    -- Decimal or fractional value
 
 
     // Command-line actions
@@ -596,7 +609,7 @@ int main(int argc, char *argv[]) {
     tokenstxt =  new QLineEdit;
 
     //   QLineEdit *tokenstxt =  new QLineEdit;
-    QLineEdit *hours =  new QLineEdit;
+    hours =  new QLineEdit;
     hours->setText("24");
 
     QSplitter *splitter = new QSplitter;
@@ -667,6 +680,34 @@ int main(int argc, char *argv[]) {
 
   //  QTimer::singleShot(1000, this, SLOT( standaloneFunc(tokenslbl)));
      //   tokensleftlbl->setText( QString::number(getTokensLeft()) );
+
+    //accounting for expected payout value
+                       // QSqlQuery q("SELECT token, returned_at, returned_value FROM valid_tokens WHERE redeemed = 1");
+                       // while (q.next()) {
+                       //     QString token = q.value(0).toString();
+                       //     QString returnedAt = q.value(1).toString();
+                       //     double returnedValue = q.value(2).toDouble();
+                         //   qDebug() << "Token:" << token << "Returned on:" << returnedAt << "Value:" << returnedValue;
+
+    //QObject::connect(test2, &QCalendarWidget::selectionChanged,
+    //         0, hoursUntilDate(QDate::currentDate()));
+    QObject::connect(test2, &QCalendarWidget::clicked, [](const QDate & date) {
+
+          qDebug() << hoursUntilDate(date);
+
+      });
+
+   // QObject::connect(test2, &QCalendarWidget::selectionChanged, 0, [test2]()  {
+   //     QDate selected = test2->selectedDate();
+    //    qDebug() << "Selected date:" << selected.toString(Qt::ISODate);
+
+        // Example: calculate hours to selected date
+       // qint64 hours = QDateTime::currentDateTime().secsTo(QDateTime(selected, QTime(0, 0))) / 3600;
+       // qDebug() << "Hours until selected date:" << hours;
+   // });
+
+
+
    QTimer mytimer;
    QObject::connect(&mytimer,&QTimer::timeout,tokensleft);
    mytimer.start(5000);
@@ -688,7 +729,7 @@ int main(int argc, char *argv[]) {
         output->appendPlainText("Selected valid tokens.");
     });
     QObject::connect(exportBtn, &QPushButton::clicked, [&]() {
-        output->appendPlainText(generateTokenFile(tokenstxt->text(),hoursUntilDate(datetest)));
+        output->appendPlainText(generateTokenFile(tokenstxt->text(),hours->text().toInt()));
     });
     QObject::connect(importBtn, &QPushButton::clicked, [&]() {
         output->appendPlainText(importTokenFile(""));
