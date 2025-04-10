@@ -31,6 +31,8 @@ QSettings *settings;
 QLineEdit *hours;
 QLineEdit *tokenvaltxt;
 
+// might export votes with tokens to make the vote files easier to reassemble ?
+
 //returned value of tokens might be handy for a voting system or to show how much change it has.
 
 int getTokensLeft() {
@@ -120,12 +122,13 @@ QString validateTokenRedemption(const QString &token,int vote) {
     }
 
     QSqlQuery update;
-    update.prepare("UPDATE valid_tokens SET redeemed = 0 , return_value = :value, return_at=:date WHERE token = :token");
+    update.prepare("UPDATE valid_tokens SET redeemed = 0 , returned_value = :value, returned_at = :date WHERE token = :token");
+    update.bindValue(":vote",1);
+    update.bindValue(":date",QDateTime::currentDateTime().toString(Qt::ISODate));
     update.bindValue(":token", token);
-    update.bindValue(":vote", vote);
-    update.bindValue(":date", QDate::currentDate());
     update.exec();
     return "Token successfully redeemed.";
+
 }
 
 int hoursUntilDate(const QDate &targetDate) {
