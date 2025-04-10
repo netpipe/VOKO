@@ -1,4 +1,4 @@
-#include <QApplication>
+﻿#include <QApplication>
 #include <QWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -374,7 +374,8 @@ QString importTokenFile(QString file2) {
           q.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
         q.bindValue(":token", token);
         q.exec();
-        if (q.numRowsAffected() > 0) redeemed++;
+        if (q.next()){
+            redeemed++;}
 
     }
 qDebug() << redeemed;
@@ -434,6 +435,7 @@ qDebug() << redeemed;
 
                 // Validate MD5 checksum
                 if (originalMD5 == QString(calculatedMD52)) { //todo
+              //      if (1){
              //  if (storedMD5 == QString(originalMD5)) {
                ///     qDebug() << "matches " << backupPath;
                     qDebug() << "testing " << QString(calculatedMD52) ;
@@ -518,7 +520,7 @@ qDebug() << redeemed;
   //  qDebug() << backupPath;
   //  }
         // if they match do cashout otherwise message invalid
-    return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed);
+    return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed - (importedTokens.size() - redeemed));
 }
 
 
