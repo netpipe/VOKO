@@ -29,6 +29,7 @@ QLineEdit *tokenstxt;
 QCalendarWidget *test2;
 QSettings *settings;
 QLineEdit *hours;
+QLineEdit *tokenvaltxt;
 
 //returned value of tokens might be handy for a voting system or to show how much change it has.
 
@@ -99,7 +100,7 @@ void selectValidTokens(int count) {
     }
 }
 
-QString validateTokenRedemption(const QString &token) {
+QString validateTokenRedemption(const QString &token,int vote) {
     QSqlQuery check;
     check.prepare("SELECT 1 FROM all_tokens WHERE token = :token");
     check.bindValue(":token", token);
@@ -119,8 +120,10 @@ QString validateTokenRedemption(const QString &token) {
     }
 
     QSqlQuery update;
-    update.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
+    update.prepare("UPDATE valid_tokens SET redeemed = 0 , return_value = :value, return_at=:date WHERE token = :token");
     update.bindValue(":token", token);
+    update.bindValue(":vote", vote);
+    update.bindValue(":date", QDate::currentDate());
     update.exec();
     return "Token successfully redeemed.";
 }
@@ -474,7 +477,7 @@ qDebug() << redeemed;
                     for (const QString &token : backupTokens) {
 
                     //     qDebug() << validateTokenRedemption(token);
-                      if ( validateTokenRedemption(token) == "Token successfully redeemed." ){
+                      if ( validateTokenRedemption(token,tokenvaltxt->text().toInt()) == "Token successfully redeemed." ){
                     //    QSqlQuery restoreQuery;
                    //     restoreQuery.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
                     //   restoreQuery.bindValue(":token", token);
@@ -543,6 +546,7 @@ int main(int argc, char *argv[]) {
         QCommandLineOption redeemOpt("redeem", "Redeem a token", "token");
         QCommandLineOption exportOpt("export", "Export N tokens", "count");
         QCommandLineOption eTimeOpt("etime", "Export time", "count");
+        QCommandLineOption voteOpt("vote", "Vote Number", "count");
         QCommandLineOption importOpt("import", "Import tokens from file", "file");
         QCommandLineOption headlessOpt("headless", "Run without GUI");
 
@@ -551,6 +555,7 @@ int main(int argc, char *argv[]) {
         parser.addOption(redeemOpt);
         parser.addOption(exportOpt);
                 parser.addOption(eTimeOpt);
+                parser.addOption(voteOpt);
         parser.addOption(importOpt);
         parser.addOption(headlessOpt);
 
@@ -583,12 +588,18 @@ int main(int argc, char *argv[]) {
         selectValidTokens(tokengen->text().toInt());
         qDebug() << "Selected valid tokens.";    }
 
-    if (parser.isSet(redeemOpt)) {
+    if (parser.isSet(redeemOpt) && !parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
-        qDebug() << validateTokenRedemption(token);    }
+        qDebug() << validateTokenRedemption(token,1);    }
 
     if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
         qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());    }
+
+    if (parser.isSet(redeemOpt) && parser.isSet(voteOpt) ) {
+        QString token = parser.value(redeemOpt);
+        QString voteOpt2 = parser.value(voteOpt);
+        qDebug() << validateTokenRedemption(token,voteOpt2.toInt());
+    }
 
     if (parser.isSet(importOpt)) {
         QString filePath = parser.value(importOpt);
@@ -624,7 +635,8 @@ int main(int argc, char *argv[]) {
     test2 = new QCalendarWidget;
     tokenstxt =  new QLineEdit;
 
-    //   QLineEdit *tokenstxt =  new QLineEdit;
+    tokenvaltxt =  new QLineEdit;
+    tokenvaltxt->setText("1");
     hours =  new QLineEdit;
     hours->setText("24");
 
@@ -634,8 +646,9 @@ int main(int argc, char *argv[]) {
     QSplitter *timesplit2 = new QSplitter;
     QLabel *tokenslbl = new QLabel;
     QLabel *hourslbl = new QLabel;
+    QLabel *votelbl = new QLabel;
     hourslbl->setText("Valid For (hours)");
-
+    votelbl->setText("Vote Number");
 
     tokensleftlbl = new QLabel;
     tokenslbl->setText("tokens");
@@ -665,6 +678,7 @@ int main(int argc, char *argv[]) {
 
     timesplit->addWidget(hourslbl);
      timesplit->addWidget(hours);
+
     layout->addWidget(tokenInput);
     layout->addWidget(redeemBtn);
     splitter->addWidget(tokengen);
@@ -673,11 +687,17 @@ int main(int argc, char *argv[]) {
     layout->addWidget(splitter);
     splitter2->addWidget(tokenslbl);
     splitter2->addWidget(tokenstxt);
+
+    splitter2->addWidget(votelbl);
+    splitter2->addWidget(tokenvaltxt);
+
     splitter2->addWidget(ee);
         splitter2->addWidget(tokensleftlbl);
              layout->addWidget(timesplit);
         //     layout->addWidget(timesplit2);
              layout->addWidget(test2);
+
+
       layout->addWidget(splitter2);
     layout->addWidget(exportBtn);
     layout->addWidget(importBtn);
@@ -705,7 +725,7 @@ int main(int argc, char *argv[]) {
    mytimer2.start(500000);
 
     QObject::connect(redeemBtn, &QPushButton::clicked, [&]() {
-        QString result = validateTokenRedemption(tokenInput->text().trimmed());
+        QString result = validateTokenRedemption(tokenInput->text().trimmed(),tokenvaltxt->text().toInt());
         output->appendPlainText(result);
     });
     QObject::connect(genAllBtn, &QPushButton::clicked, [&]() {
