@@ -521,12 +521,12 @@ qDebug() << redeemed;
                 QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
 
         }
-  //  if (importedTokens.size() != redeemed){
-   // QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
+    if (importedTokens.size() != redeemed){
+    QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
   //  qDebug() << backupPath;
-  //  }
+    }
         // if they match do cashout otherwise message invalid
-    return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed - (importedTokens.size() - redeemed));
+    return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed);
 }
 
 
