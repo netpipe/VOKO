@@ -258,7 +258,7 @@ void restoreExpiredTokensFromBackup() {
 
 
                 QByteArray calculatedMD52 = QCryptographicHash::hash(rawData.toUtf8(), QCryptographicHash::Md5).toHex();
-//qDebug() << storedMD5 << QString(calculatedMD52) ;
+        //qDebug() << storedMD5 << QString(calculatedMD52) ;
                // if (storedMD5 == QString(calculatedMD52)) {
                     QTextStream in(&backupFile);
 
@@ -370,12 +370,28 @@ QString importTokenFile(QString file2) {
     int redeemed = 0;
     for (const QString &token : importedTokens) {
         QSqlQuery q;
+       // q.prepare("SELECT valid_tokens WHERE token = :token AND redeemed = 1");
+          q.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
+        q.bindValue(":token", token);
+        q.exec();
+        if (q.numRowsAffected() > 0) redeemed++;
+
+    }
+qDebug() << redeemed;
+
+
+
+    for (const QString &token : importedTokens) {
+        QSqlQuery q;
         q.prepare("UPDATE valid_tokens SET redeemed = 1 WHERE token = :token AND redeemed = 0");
         q.bindValue(":token", token);
      //   q.exec();
         if (q.numRowsAffected() > 0) redeemed++;
     }
 
+
+        if (importedTokens.size() == redeemed){
+            redeemed=0;
     // Check for backup files (expired ones), restore if needed
     QSqlQuery queryBackup;
   //  queryBackup.prepare("SELECT backup_path, md5_checksum, expiry_time FROM transaction_files WHERE expiry_time < :current_time");
@@ -399,7 +415,7 @@ QString importTokenFile(QString file2) {
 
             if (backupFile.exists() && backupFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
              //    if (backupFile.exists() ) {
-// qDebug() << "backup exists2";
+            // qDebug() << "backup exists2";
                 QByteArray backupData = backupFile.readAll();
               //  QByteArray calculatedMD5 = QCryptographicHash::hash(backupData, QCryptographicHash::Md5).toHex();
 
@@ -412,7 +428,6 @@ QString importTokenFile(QString file2) {
 
                 // Only join lines up to (but not including) the MD5 line
                 QString rawData = lines2.mid(0, md5Index).join("\n");
-
 
                 QByteArray calculatedMD52 = QCryptographicHash::hash(rawData.toUtf8(), QCryptographicHash::Md5).toHex();
 
@@ -453,8 +468,6 @@ QString importTokenFile(QString file2) {
  //qDebug() << backupTokens.count() ;
                     // Restore tokens from the backup file
 
-                        //check all before processing
-
 
                     for (const QString &token : backupTokens) {
 
@@ -494,10 +507,16 @@ QString importTokenFile(QString file2) {
         }
     }
 
-    if (importedTokens.size() != redeemed){
-    QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
-    qDebug() << backupPath;
-    }
+
+        }else
+        {
+                QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
+
+        }
+  //  if (importedTokens.size() != redeemed){
+   // QMessageBox::information(0, "Alert", "tokenfile not valid dont pay ?",QMessageBox::Ok);
+  //  qDebug() << backupPath;
+  //  }
         // if they match do cashout otherwise message invalid
     return QString("Imported %1 tokens. %2 were valid and redeemed.").arg(importedTokens.size()).arg(redeemed);
 }
@@ -538,11 +557,11 @@ int main(int argc, char *argv[]) {
 
     //load config file with last used database
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-#ifdef __APPLE__
+    #ifdef __APPLE__
     db.setDatabaseName("/Applications/VOKO.app/Contents/MacOS/tokens.db");
-#else
+    #else
        db.setDatabaseName("tokens.db");
-#endif
+    #endif
     db.open();
 
     QSqlQuery init;
@@ -556,22 +575,18 @@ int main(int argc, char *argv[]) {
     // Command-line actions
     if (parser.isSet(generateAllOpt)) {
         bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
-        qDebug() << "Generated all tokens.";
-    }
+        qDebug() << "Generated all tokens.";    }
 
     if (parser.isSet(selectValidOpt)) {
         selectValidTokens(tokengen->text().toInt());
-        qDebug() << "Selected valid tokens.";
-    }
+        qDebug() << "Selected valid tokens.";    }
 
     if (parser.isSet(redeemOpt)) {
         QString token = parser.value(redeemOpt);
-        qDebug() << validateTokenRedemption(token);
-    }
+        qDebug() << validateTokenRedemption(token);    }
 
     if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
-        qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());
-    }
+        qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());    }
 
     if (parser.isSet(importOpt)) {
         QString filePath = parser.value(importOpt);
@@ -587,8 +602,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (parser.isSet(headlessOpt)) {
-        return 0;  // Skip GUI
+    if (parser.isSet(headlessOpt)) {        return 0;  // Skip GUI
     }
 
 
@@ -641,19 +655,11 @@ int main(int argc, char *argv[]) {
 
         QDate datetest = test2->selectedDate();
     if (day != ""){
-
-      //  datetest.set
-       //  qDebug() << day;
-       //  qDebug() << datetest ;
       //  datetest.fromString(dates.toLatin1() );
         datetest.setDate(year.toInt(),month.toInt(),day.toInt());
         test2->setSelectedDate(datetest);
-
   //  settings->setValue("year", test2->selectedDate().year());
-   //     settings->setValue("day", test2->selectedDate().day());
 }
-   // qDebug() << soundFile;
-   // settings->setValue("soundFile", soundFile);
 
     timesplit->addWidget(hourslbl);
      timesplit->addWidget(hours);
@@ -675,11 +681,7 @@ int main(int argc, char *argv[]) {
     layout->addWidget(importBtn);
     layout->addWidget(output);
 
-  // QTimer::(10000, &tokensleft);
     tokensleft();
-
-  //  QTimer::singleShot(1000, this, SLOT( standaloneFunc(tokenslbl)));
-     //   tokensleftlbl->setText( QString::number(getTokensLeft()) );
 
     //accounting for expected payout value
                        // QSqlQuery q("SELECT token, returned_at, returned_value FROM valid_tokens WHERE redeemed = 1");
@@ -689,24 +691,8 @@ int main(int argc, char *argv[]) {
                        //     double returnedValue = q.value(2).toDouble();
                          //   qDebug() << "Token:" << token << "Returned on:" << returnedAt << "Value:" << returnedValue;
 
-    //QObject::connect(test2, &QCalendarWidget::selectionChanged,
-    //         0, hoursUntilDate(QDate::currentDate()));
     QObject::connect(test2, &QCalendarWidget::clicked, [](const QDate & date) {
-
-          qDebug() << hoursUntilDate(date);
-
-      });
-
-   // QObject::connect(test2, &QCalendarWidget::selectionChanged, 0, [test2]()  {
-   //     QDate selected = test2->selectedDate();
-    //    qDebug() << "Selected date:" << selected.toString(Qt::ISODate);
-
-        // Example: calculate hours to selected date
-       // qint64 hours = QDateTime::currentDateTime().secsTo(QDateTime(selected, QTime(0, 0))) / 3600;
-       // qDebug() << "Hours until selected date:" << hours;
-   // });
-
-
+          qDebug() << hoursUntilDate(date);});
 
    QTimer mytimer;
    QObject::connect(&mytimer,&QTimer::timeout,tokensleft);
