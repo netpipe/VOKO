@@ -143,6 +143,22 @@ int hoursUntilDate(const QDate &targetDate) {
    // return daysDiff * 24;
 }
 
+void showVotesByValue(int targetValue) {
+    QSqlQuery q;
+
+    // Query to count how many tokens have the specified returned_value and are redeemed
+    q.prepare("SELECT COUNT(*) FROM valid_tokens WHERE returned_value = :value");
+    q.bindValue(":value", targetValue);
+
+    if (q.exec() && q.next()) {
+        int count = q.value(0).toInt();
+        QMessageBox::information(nullptr, "Vote Count",
+            QString("Total tokens with returned value %1: %2").arg(targetValue).arg(count));
+    } else {
+        QMessageBox::warning(nullptr, "Error", "Failed to calculate vote count.");
+    }
+}
+
 
 QString generateTokenFile(QString count2, int hoursToExpire) {
    settings->setValue("year", test2->selectedDate().year());
@@ -639,7 +655,7 @@ int main(int argc, char *argv[]) {
     auto *redeemBtn = new QPushButton("Redeem Token");
     auto *genAllBtn = new QPushButton("Generate All Tokens");
     auto *genValidBtn = new QPushButton("Select Valid Tokens");
-
+    auto *tallybutton = new QPushButton("Tally Votes");
 
     test2 = new QCalendarWidget;
     tokenstxt =  new QLineEdit;
@@ -710,6 +726,7 @@ int main(int argc, char *argv[]) {
       layout->addWidget(splitter2);
     layout->addWidget(exportBtn);
     layout->addWidget(importBtn);
+                layout->addWidget(tallybutton);
     layout->addWidget(output);
 
     tokensleft();
@@ -751,6 +768,11 @@ int main(int argc, char *argv[]) {
     QObject::connect(importBtn, &QPushButton::clicked, [&]() {
         output->appendPlainText(importTokenFile(""));
     });
+
+    QObject::connect(tallybutton, &QPushButton::clicked, [&]() {
+       showVotesByValue(tokenvaltxt->text().toInt());
+    });
+
 
     window.resize(500, 500);
     window.show();
