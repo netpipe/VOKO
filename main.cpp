@@ -21,9 +21,14 @@
 #include <QFileDialog>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QCalendarWidget>
+#include <QSettings>
 
 QLabel *tokensleftlbl;
 QLineEdit *tokenstxt;
+QCalendarWidget *test2;
+QSettings *settings;
+
 
 int getTokensLeft() {
     QSqlQuery query;
@@ -117,9 +122,32 @@ QString validateTokenRedemption(const QString &token) {
     update.exec();
     return "Token successfully redeemed.";
 }
+int hoursUntilDate(const QDate &targetDate) {
+    QDate today = QDate::currentDate();
+    int daysDiff = today.daysTo(targetDate);
+    return daysDiff * 24;
+}
+
 
 QString generateTokenFile(QString count2, int hoursToExpire) {
+   settings->setValue("year", test2->selectedDate().year());
+    settings->setValue("month", test2->selectedDate().month());
+     settings->setValue("day", test2->selectedDate().day());
+  // qDebug() << test2->selectedDate().currentDate(); // save settings
    // QString text = QInputDialog::getText(0,"Title","text");
+
+     int year = test2->selectedDate().year();
+     int day = test2->selectedDate().day();
+     int month = test2->selectedDate().month();
+
+     QDate datetest = test2->selectedDate();
+   //  datetest.set
+    //  qDebug() << day;
+    //  qDebug() << datetest ;
+   //  datetest.fromString(dates.toLatin1() );
+     datetest.setDate(year,month,day);
+
+           //  qDebug() << hoursUntil(datetest);
    int count = count2.toInt();
    int counted=0;
 
@@ -139,7 +167,6 @@ QString generateTokenFile(QString count2, int hoursToExpire) {
     qDebug() << counted << count << endl;
     if ( counted == count ) {
     // Mark selected tokens as redeemed immediately
-
 
 
     QString timestamp = QDateTime::currentDateTime().toString(Qt::ISODate);
@@ -564,6 +591,8 @@ int main(int argc, char *argv[]) {
     auto *genAllBtn = new QPushButton("Generate All Tokens");
     auto *genValidBtn = new QPushButton("Select Valid Tokens");
 
+
+    test2 = new QCalendarWidget;
     tokenstxt =  new QLineEdit;
 
     //   QLineEdit *tokenstxt =  new QLineEdit;
@@ -591,6 +620,27 @@ int main(int argc, char *argv[]) {
     auto *importBtn = new QPushButton("Import & Redeem Token File");
 
 
+    settings = new QSettings("NP", "VOKO", 0);
+    QString dates = settings->value("dates", "").toString();
+    QString day = settings->value("day", "").toString();
+    QString month = settings->value("month", "").toString();
+        QString year = settings->value("year", "").toString();
+
+        QDate datetest = test2->selectedDate();
+    if (day != ""){
+
+      //  datetest.set
+       //  qDebug() << day;
+       //  qDebug() << datetest ;
+      //  datetest.fromString(dates.toLatin1() );
+        datetest.setDate(year.toInt(),month.toInt(),day.toInt());
+        test2->setSelectedDate(datetest);
+
+  //  settings->setValue("year", test2->selectedDate().year());
+   //     settings->setValue("day", test2->selectedDate().day());
+}
+   // qDebug() << soundFile;
+   // settings->setValue("soundFile", soundFile);
 
     timesplit->addWidget(hourslbl);
      timesplit->addWidget(hours);
@@ -606,6 +656,7 @@ int main(int argc, char *argv[]) {
         splitter2->addWidget(tokensleftlbl);
              layout->addWidget(timesplit);
         //     layout->addWidget(timesplit2);
+             layout->addWidget(test2);
       layout->addWidget(splitter2);
     layout->addWidget(exportBtn);
     layout->addWidget(importBtn);
@@ -637,7 +688,7 @@ int main(int argc, char *argv[]) {
         output->appendPlainText("Selected valid tokens.");
     });
     QObject::connect(exportBtn, &QPushButton::clicked, [&]() {
-        output->appendPlainText(generateTokenFile(tokenstxt->text(),hours->text().toInt()));
+        output->appendPlainText(generateTokenFile(tokenstxt->text(),hoursUntilDate(datetest)));
     });
     QObject::connect(importBtn, &QPushButton::clicked, [&]() {
         output->appendPlainText(importTokenFile(""));
