@@ -88,7 +88,7 @@ void bruteForceTokenPool2(int total = 100000) {
 
 void selectValidTokens(int count) {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(0, "Question", "select new token pool ?",
+    reply = QMessageBox::question(0, "Question Are You Sure", "Select new token pool ?",
                                   QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes) {
     QSqlQuery q;
@@ -299,6 +299,11 @@ void restoreExpiredTokensFromBackup() {
 }
 
 void bruteForceTokenPool(int total = 100000, int batchSize = 1000) {
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(0, "Question Are You Sure ?", "Generate New Tokens ?",
+                                  QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+
     //sql automatically removes doubles
     QSqlQuery clear;
     clear.exec("DELETE FROM all_tokens");
@@ -322,6 +327,7 @@ void bruteForceTokenPool(int total = 100000, int batchSize = 1000) {
     }
 
     QSqlDatabase::database().commit();
+    }
 }
 
 void removeTransactionFileByMD5(const QString &md5) {
