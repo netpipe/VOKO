@@ -122,8 +122,8 @@ QString validateTokenRedemption(const QString &token,int vote) {
     }
 
     QSqlQuery update;
-    update.prepare("UPDATE valid_tokens SET redeemed = 0 , returned_value = :value, returned_at = :date WHERE token = :token");
-    update.bindValue(":vote",1);
+    update.prepare("UPDATE valid_tokens SET redeemed = 0 , returned_value = :vote, returned_at = :date WHERE token = :token");
+    update.bindValue(":vote", vote);
     update.bindValue(":date",QDateTime::currentDateTime().toString(Qt::ISODate));
     update.bindValue(":token", token);
     update.exec();
