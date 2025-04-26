@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         QString param1 = parts[0].trimmed();
         QString param2 = parts[1].trimmed();
         QString subject = "CSV Parameters Info";
-        QString body = QString("Here are the parameters: %1, %2").arg(param1, param2);
+        QString body = QString("Your Vote Token: %1, %2").arg(param1, param2);
 
         if (!client.sendMail(from, recipients, subject, body)) {
             qWarning() << "Failed to send email for row:" << line;

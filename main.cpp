@@ -204,7 +204,7 @@ QString generateTokenFile(QString count2, int hoursToExpire) {
 
     // Create file name based on timestamp for backup and export
     #ifdef __APPLE__
-    QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", "/Applications/VOKO.app/Contents/MacOS/files/", "Token File (*.iou)");
+    QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", QCoreApplication::applicationDirPath() + "/files/", "Token File (*.iou)");
      #else
     QString filePath = QFileDialog::getSaveFileName(nullptr, "Export Token File", "", "Token File (*.iou)");
     #endif
@@ -589,10 +589,10 @@ int main(int argc, char *argv[]) {
 
     //load config file with last used database
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    #ifdef __APPLE__
-    db.setDatabaseName("/Applications/VOKO.app/Contents/MacOS/tokens.db");
+    #ifdef __APPLE__s
+    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/tokens.db");
     #else
-       db.setDatabaseName("tokens.db");
+       db.setDatabaseName(QCoreApplication::applicationDirPath() + "/tokens.db");
     #endif
     db.open();
 
@@ -777,5 +777,84 @@ int main(int argc, char *argv[]) {
     window.resize(500, 500);
     window.show();
     return app.exec();
+}
+
+
+
+
+#include <QFile>
+#include <QTextStream>
+#include <QMessageBox>
+#include <QSqlQuery>
+#include <QDebug>
+
+void importTokenWithVotes() {
+    // Open file dialog to select the token file
+    QString filePath = QFileDialog::getOpenFileName(nullptr, "Import Token File", "", "CSV Files (*.csv)");
+    if (filePath.isEmpty()) {
+        QMessageBox::warning(nullptr, "Error", "No file selected.");
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(nullptr, "Error", "Failed to open file.");
+        return;
+    }
+
+    QTextStream in(&file);
+    int updatedTokens = 0;
+    int invalidTokens = 0;
+    int alreadyRedeemed = 0;
+
+    // Read each line in the CSV file
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList tokenVote = line.split(',');
+
+        if (tokenVote.size() != 2) {
+            // Skip invalid lines
+            qDebug() << "Invalid line format (must be token,vote):" << line;
+            continue;
+        }
+
+        QString token = tokenVote.at(0).trimmed();
+        QString vote = tokenVote.at(1).trimmed();
+
+        // Validate token exists in the database
+        QSqlQuery check;
+        check.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
+        check.bindValue(":token", token);
+        check.exec();
+
+        if (!check.next()) {
+            // Token not found
+            invalidTokens++;
+            qDebug() << "Invalid token:" << token;
+        } else {
+            bool redeemed = check.value(0).toBool();
+            if (redeemed) {
+                // Token already redeemed
+                alreadyRedeemed++;
+                qDebug() << "Token already redeemed:" << token;
+            } else {
+                // Token exists and not redeemed, redeem it
+                QSqlQuery update;
+                update.prepare("UPDATE valid_tokens SET redeemed = 1, return_value = :vote WHERE token = :token");
+                update.bindValue(":token", token);
+                update.bindValue(":vote", vote.toDouble());
+                update.exec();
+
+                if (update.numRowsAffected() > 0) {
+                    updatedTokens++;
+                } else {
+                    qDebug() << "Failed to update token:" << token;
+                }
+            }
+        }
+    }
+
+    file.close();
+
 }
 
