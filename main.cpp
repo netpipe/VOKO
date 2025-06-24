@@ -664,7 +664,8 @@ int main(int argc, char *argv[]) {
     tokenvaltxt->setText("1");
     hours =  new QLineEdit;
     hours->setText("24");
-
+  QSplitter *splitter34 = new QSplitter;
+  QSplitter *splitter35 = new QSplitter;
     QSplitter *splitter = new QSplitter;
     QSplitter *splitter2 = new QSplitter;
     QSplitter *timesplit = new QSplitter;
@@ -676,7 +677,7 @@ int main(int argc, char *argv[]) {
     votelbl->setText("Vote Number");
 
     tokensleftlbl = new QLabel;
-    tokenslbl->setText("tokens");
+    tokenslbl->setText("# of tokens");
     tokengen->setText("10000");
 
     QLabel *ee = new QLabel;
@@ -704,7 +705,10 @@ int main(int argc, char *argv[]) {
     timesplit->addWidget(hourslbl);
      timesplit->addWidget(hours);
 
-    layout->addWidget(tokenInput);
+    splitter34->addWidget(tokenInput);
+    splitter34->addWidget(votelbl);
+    splitter34->addWidget(tokenvaltxt);
+    layout->addWidget(splitter34);
     layout->addWidget(redeemBtn);
     splitter->addWidget(tokengen);
     splitter->addWidget(genAllBtn);
@@ -713,8 +717,7 @@ int main(int argc, char *argv[]) {
     splitter2->addWidget(tokenslbl);
     splitter2->addWidget(tokenstxt);
 
-    splitter2->addWidget(votelbl);
-    splitter2->addWidget(tokenvaltxt);
+
 
     splitter2->addWidget(ee);
         splitter2->addWidget(tokensleftlbl);
@@ -724,8 +727,10 @@ int main(int argc, char *argv[]) {
 
 
       layout->addWidget(splitter2);
-    layout->addWidget(exportBtn);
-    layout->addWidget(importBtn);
+    splitter35->addWidget(exportBtn);
+    splitter35->addWidget(importBtn);
+     layout->addWidget(splitter35);
+
                 layout->addWidget(tallybutton);
     layout->addWidget(output);
 
