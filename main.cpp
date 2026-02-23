@@ -23,6 +23,7 @@
 #include <QCommandLineOption>
 #include <QCalendarWidget>
 #include <QSettings>
+#include <qcheckbox.h>
 
 QLabel *tokensleftlbl;
 QLineEdit *tokenstxt;
@@ -30,14 +31,33 @@ QCalendarWidget *test2;
 QSettings *settings;
 QLineEdit *hours;
 QLineEdit *tokenvaltxt;
+QCheckBox *chkReturn;
 
 // might export votes with tokens to make the vote files easier to reassemble ?
 
 //returned value of tokens might be handy for a voting system or to show how much change it has.
 
+//todo accept md5 sum on existing backups ?
+
 int getTokensLeft() {
     QSqlQuery query;
     query.prepare("SELECT COUNT(*) FROM valid_tokens WHERE redeemed = 0");
+
+    if (!query.exec()) {
+        qDebug() << "Failed to execute query:" << query.lastError().text();
+        return -1; // Return -1 to indicate an error
+    }
+
+    if (query.next()) {
+        return query.value(0).toInt(); // Return the number of remaining tokens
+    }
+
+    return 0; // In case no tokens are left
+}
+
+int getTokensReturned() {
+    QSqlQuery query;
+    query.prepare("SELECT COUNT(*) FROM valid_tokens WHERE redeemed = 1 AND redeemed = 3");
 
     if (!query.exec()) {
         qDebug() << "Failed to execute query:" << query.lastError().text();
@@ -122,10 +142,11 @@ QString validateTokenRedemption(const QString &token,int vote) {
     }
 
     QSqlQuery update;
-    update.prepare("UPDATE valid_tokens SET redeemed = 2 , returned_value = :vote, returned_at = :date WHERE token = :token");
+    update.prepare("UPDATE valid_tokens SET redeemed = :redeemed , returned_value = :vote, returned_at = :date WHERE token = :token");
     update.bindValue(":vote", vote);
     update.bindValue(":date",QDateTime::currentDateTime().toString(Qt::ISODate));
     update.bindValue(":token", token);
+    update.bindValue(":redeemed", QString::number(chkReturn->isChecked()));
     update.exec();
     return "Token successfully redeemed.";
 
@@ -299,7 +320,9 @@ void restoreExpiredTokensFromBackup() {
                         // Mark tokens as unredeemed
                         QSqlQuery q;
                         q.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
+                       // q.prepare("UPDATE valid_tokens SET redeemed = :redeemed WHERE token = :token"); // set redeemed to 3 maybe to make voting work better if not using the files
                         q.bindValue(":token", token);
+                      //  q.bindValue(":redeemed", QString::number(chkReturn->isChecked()));
                         q.exec();
                      //   qDebug() << token;
                     }
@@ -398,12 +421,14 @@ QString importTokenFile(QString file2) {
     int redeemed = 0;
     for (const QString &token : importedTokens) {
         QSqlQuery q;
-       // q.prepare("SELECT valid_tokens WHERE token = :token AND redeemed = 1");
-          q.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
+        //q.prepare("SELECT valid_tokens WHERE token = :token AND redeemed = 1");
+        q.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
         q.bindValue(":token", token);
+       // validateTokenRedemption(token,1);
         q.exec();
         if (q.next()){
-            redeemed++;}
+            redeemed++;
+        }
 
     }
 qDebug() << redeemed;
@@ -413,6 +438,8 @@ qDebug() << redeemed;
     for (const QString &token : importedTokens) {
         QSqlQuery q;
         q.prepare("UPDATE valid_tokens SET redeemed = 1 WHERE token = :token AND redeemed = 0");
+      //  q.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token AND redeemed = 1");
+      //  q.prepare("UPDATE valid_tokens SET redeemed = 0 WHERE token = :token");
         q.bindValue(":token", token);
      //   q.exec();
         if (q.numRowsAffected() > 0) redeemed++;
@@ -500,7 +527,7 @@ qDebug() << redeemed;
 
 
                     for (const QString &token : backupTokens) {
-
+//qDebug() << "token:" << token;
                     //     qDebug() << validateTokenRedemption(token);
                       if ( validateTokenRedemption(token,tokenvaltxt->text().toInt()) == "Token successfully redeemed." ){
                     //    QSqlQuery restoreQuery;
@@ -570,7 +597,7 @@ int main(int argc, char *argv[]) {
         QCommandLineOption selectValidOpt("select-valid", "Select valid tokens");
         QCommandLineOption redeemOpt("redeem", "Redeem a token", "token");
         QCommandLineOption exportOpt("export", "Export N tokens", "count");
-        QCommandLineOption eTimeOpt("etime", "Export time", "count");
+        QCommandLineOption eTimeOpt("etime", "Export time n/a", "count");
         QCommandLineOption voteOpt("vote", "Vote Number", "count");
         QCommandLineOption importOpt("import", "Import tokens from file", "file");
         QCommandLineOption headlessOpt("headless", "Run without GUI");
@@ -689,6 +716,10 @@ int main(int argc, char *argv[]) {
     tokenvaltxt->setText("1");
     hours =  new QLineEdit;
     hours->setText("24");
+    chkReturn = new QCheckBox;
+    chkReturn->setText("Non Returnable");
+
+
   QSplitter *splitter34 = new QSplitter;
   QSplitter *splitter35 = new QSplitter;
     QSplitter *splitter = new QSplitter;
@@ -758,6 +789,7 @@ int main(int argc, char *argv[]) {
 
                 layout->addWidget(tallybutton);
     layout->addWidget(output);
+    layout->addWidget(chkReturn);
 
     tokensleft();
 
