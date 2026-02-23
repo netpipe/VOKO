@@ -650,6 +650,7 @@ int main(int argc, char *argv[]) {
         QCommandLineOption eTimeOpt("etime", "Export time n/a", "count");
         QCommandLineOption voteOpt("vote", "Vote Number", "count");
         QCommandLineOption importOpt("import", "Import tokens from file", "file");
+        QCommandLineOption returnOpt("nonreturn", "nonreturn to pile");
         QCommandLineOption headlessOpt("headless", "Run without GUI");
 
         parser.addOption(generateAllOpt);
@@ -660,7 +661,7 @@ int main(int argc, char *argv[]) {
                 parser.addOption(voteOpt);
         parser.addOption(importOpt);
         parser.addOption(headlessOpt);
-
+        parser.addOption(returnOpt);
         parser.process(app);
 
 
@@ -682,6 +683,8 @@ int main(int argc, char *argv[]) {
 
     chkReturn = new QCheckBox;
     chkReturn->setText("Non Returnable");
+
+    if (parser.isSet(returnOpt)){chkReturn->setChecked(1);}
     // Command-line actions
     if (parser.isSet(generateAllOpt)) {
         bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
