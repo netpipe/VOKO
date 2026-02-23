@@ -122,7 +122,7 @@ QString validateTokenRedemption(const QString &token,int vote) {
     }
 
     QSqlQuery update;
-    update.prepare("UPDATE valid_tokens SET redeemed = 0 , returned_value = :vote, returned_at = :date WHERE token = :token");
+    update.prepare("UPDATE valid_tokens SET redeemed = 2 , returned_value = :vote, returned_at = :date WHERE token = :token");
     update.bindValue(":vote", vote);
     update.bindValue(":date",QDateTime::currentDateTime().toString(Qt::ISODate));
     update.bindValue(":token", token);
@@ -618,7 +618,27 @@ int main(int argc, char *argv[]) {
         qDebug() << validateTokenRedemption(token,1);    }
 
     if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
-        qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());    }
+       // qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());
+        int count =1;
+        QSqlQuery query;
+        query.prepare("SELECT token FROM valid_tokens WHERE redeemed = 0 LIMIT :count"); //random ?
+        query.bindValue(":count", count);
+        query.exec();
+
+        QStringList tokens;
+        while (query.next()) {
+            qDebug() << query.value(0).toString();
+            tokens << query.value(0).toString();
+          //  counted = counted + 1;
+        }
+        QSqlQuery update;
+        update.prepare("UPDATE valid_tokens SET redeemed = 1 WHERE token = :token");
+
+        for (const QString &token : tokens) {
+            update.bindValue(":token", token);
+            update.exec();
+        }
+    }
 
     if (parser.isSet(redeemOpt) && parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
