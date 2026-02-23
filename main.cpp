@@ -617,9 +617,10 @@ int main(int argc, char *argv[]) {
         QString token = parser.value(redeemOpt);
         qDebug() << validateTokenRedemption(token,1);    }
 
-    if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
+    //    if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
+    if (parser.isSet(exportOpt) ) {
        // qDebug() << generateTokenFile(parser.value(exportOpt),parser.value(eTimeOpt).toInt());
-        int count =1;
+        int count =parser.value(exportOpt).toInt();
         QSqlQuery query;
         query.prepare("SELECT token FROM valid_tokens WHERE redeemed = 0 LIMIT :count"); //random ?
         query.bindValue(":count", count);
