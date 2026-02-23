@@ -615,6 +615,10 @@ int main(int argc, char *argv[]) {
 
     if (parser.isSet(redeemOpt) && !parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
+        qDebug() << validateTokenRedemption(token,parser.value(voteOpt).toInt());    }
+
+    if (parser.isSet(redeemOpt) ) {
+        QString token = parser.value(redeemOpt);
         qDebug() << validateTokenRedemption(token,1);    }
 
     //    if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt) ) {
