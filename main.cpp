@@ -57,7 +57,7 @@ int getTokensLeft() {
 
 int getTokensReturned() {
     QSqlQuery query;
-    query.prepare("SELECT COUNT(*) FROM valid_tokens WHERE redeemed = 1 AND redeemed = 3");
+    query.prepare("SELECT COUNT(*) FROM valid_tokens WHERE redeemed = 0 AND redeemed = 3 ");
 
     if (!query.exec()) {
         qDebug() << "Failed to execute query:" << query.lastError().text();
@@ -131,13 +131,13 @@ QString validateTokenRedemption(const QString &token,int vote) {
     }
 
     QSqlQuery valid;
-    valid.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token");
+    valid.prepare("SELECT redeemed FROM valid_tokens WHERE token = :token AND redeemed = 1");
     valid.bindValue(":token", token);
     if (!valid.exec() || !valid.next()) {
         return "Invalid Token: Not part of active set.";
     }
 
-    if (valid.value(0).toBool() == 0) {
+    if (valid.value(0).toBool() == 3 | 0) {
         return "Token already redeemed.";
     }
 
@@ -146,7 +146,13 @@ QString validateTokenRedemption(const QString &token,int vote) {
     update.bindValue(":vote", vote);
     update.bindValue(":date",QDateTime::currentDateTime().toString(Qt::ISODate));
     update.bindValue(":token", token);
-    update.bindValue(":redeemed", QString::number(chkReturn->isChecked()));
+
+    int vartest=0;
+    if (chkReturn->isChecked() ) {
+        vartest=3;
+    }
+
+    update.bindValue(":redeemed", vartest); // use 3 maybe
     update.exec();
     return "Token successfully redeemed.";
 
