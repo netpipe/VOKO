@@ -25,6 +25,10 @@
 #include <QSettings>
 #include <qcheckbox.h>
 
+#include <QRandomGenerator>
+//#include <QPrintDialog>
+#include "QRCode/QrCodeGeneratorDemo.h"
+
 QLabel *tokensleftlbl;
 QLineEdit *tokenstxt;
 QCalendarWidget *test2;
@@ -38,6 +42,46 @@ QCheckBox *chkReturn;
 //returned value of tokens might be handy for a voting system or to show how much change it has.
 
 //todo accept md5 sum on existing backups ?
+void QRCode(QString text2,QString outfilename) {
+
+
+    QString maxqrstr;
+    for (int i=0 ;i < 2000 ; i++){ //4296 / 8 per ascii  537
+        maxqrstr.append("i");
+    }
+
+    std::wstring text ( text2.toStdWString() );
+    const wchar_t* wstr = text.c_str() ;
+    char mbstr[4000];
+    std::wcstombs(mbstr, wstr, 4000);
+
+    const QrCode::Ecc errCorLvl = QrCode::Ecc::LOW;  // Error correction level
+    const QrCode qr = QrCode::encodeText( mbstr , errCorLvl);
+
+    QString filename = QApplication::applicationDirPath() +"/" + outfilename + ".svg";
+    QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    //    qWarning() << "Failed to open file for writing";
+        return;
+    }
+    QTextStream out(&file);
+    out << QString::fromStdString(qr.toSvgString(4));
+    file.close();
+
+   // QImage *img_object = new QImage();
+   // img_object->load("./tmp.svg");
+   // QPixmap image = QPixmap::fromImage(*img_object);
+ //   QPixmap scaled_img = image.scaled(this->width(), this->height(), Qt::KeepAspectRatio);
+  //  QPixmap scaled_img = image.scaled(ui->graphicsView->width(), ui->graphicsView->height(), Qt::KeepAspectRatio);
+   // QGraphicsScene *scene= new QGraphicsScene();
+   // scene->addItem(new QGraphicsSvgItem("./tmp.svg"));
+    //scene->addPixmap(scaled_img);
+   // scene->setSceneRect(scaled_img.rect());
+  //  ui->graphicsView->setScene(scene);
+  //  ui->graphicsView->show();
+
+}
+
 
 int getTokensLeft() {
     QSqlQuery query;
@@ -375,7 +419,7 @@ void bruteForceTokenPool(int total = 100000, int batchSize = 1000) {
     }
 }
 
-void removeTransactionFileByMD5(const QString &md5) {
+void removeTransactionFileByMD5(const QString md5) {
     QSqlQuery query;
     query.prepare("DELETE FROM transaction_files WHERE md5 = :md5");
     query.bindValue(":md5", md5);
@@ -636,7 +680,8 @@ int main(int argc, char *argv[]) {
     init.exec("ALTER TABLE valid_tokens ADD COLUMN returned_at TEXT");      //   -- ISO datetime string
     init.exec("ALTER TABLE valid_tokens ADD COLUMN returned_value REAL");  //    -- Decimal or fractional value
 
-
+    chkReturn = new QCheckBox;
+    chkReturn->setText("Non Returnable");
     // Command-line actions
     if (parser.isSet(generateAllOpt)) {
         bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
@@ -646,7 +691,7 @@ int main(int argc, char *argv[]) {
         selectValidTokens(tokengen->text().toInt());
         qDebug() << "Selected valid tokens.";    }
 
-    if (parser.isSet(redeemOpt) && !parser.isSet(voteOpt) ) {
+    if (parser.isSet(redeemOpt) && parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
         qDebug() << validateTokenRedemption(token,parser.value(voteOpt).toInt());    }
 
@@ -722,8 +767,7 @@ int main(int argc, char *argv[]) {
     tokenvaltxt->setText("1");
     hours =  new QLineEdit;
     hours->setText("24");
-    chkReturn = new QCheckBox;
-    chkReturn->setText("Non Returnable");
+
 
 
   QSplitter *splitter34 = new QSplitter;
