@@ -651,6 +651,7 @@ int main(int argc, char *argv[]) {
         QCommandLineOption voteOpt("vote", "Vote Number", "count");
         QCommandLineOption importOpt("import", "Import tokens from file", "file");
         QCommandLineOption returnOpt("nonreturn", "nonreturn to pile");
+        QCommandLineOption qrOpt("qrcode", "qrcode generate");
         QCommandLineOption headlessOpt("headless", "Run without GUI");
 
         parser.addOption(generateAllOpt);
@@ -662,6 +663,7 @@ int main(int argc, char *argv[]) {
         parser.addOption(importOpt);
         parser.addOption(headlessOpt);
         parser.addOption(returnOpt);
+        parser.addOption(qrOpt);
         parser.process(app);
 
 
@@ -698,7 +700,7 @@ int main(int argc, char *argv[]) {
         QString token = parser.value(redeemOpt);
         qDebug() << validateTokenRedemption(token,parser.value(voteOpt).toInt());    }
 
-    if (parser.isSet(redeemOpt) ) {
+    if (parser.isSet(redeemOpt) && !parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
         qDebug() << validateTokenRedemption(token,1);    }
 
@@ -722,8 +724,13 @@ int main(int argc, char *argv[]) {
 
         for (const QString &token : tokens) {
             update.bindValue(":token", token);
+            if (parser.isSet(qrOpt)){
+                QRCode(token, token) ;
+            }
             update.exec();
         }
+
+
     }
 
     if (parser.isSet(redeemOpt) && parser.isSet(voteOpt) ) {
