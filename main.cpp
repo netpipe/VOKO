@@ -655,6 +655,9 @@ int main(int argc, char *argv[]) {
         QCommandLineOption importOpt("import", "Import tokens from file", "file");
         QCommandLineOption returnOpt("nonreturn", "nonreturn to pile");
         QCommandLineOption qrOpt("qrcode", "qrcode generate");
+        QCommandLineOption restoreOpt("restore", "restoreExpired");
+        QCommandLineOption getOpt("get", "get tokens left");
+        QCommandLineOption exportFileOpt("export", "Export File");
         QCommandLineOption headlessOpt("headless", "Run without GUI");
 
         parser.addOption(generateAllOpt);
@@ -668,6 +671,9 @@ int main(int argc, char *argv[]) {
         parser.addOption(returnOpt);
         parser.addOption(qrOpt);
         parser.addOption(genOpt);
+        parser.addOption(restoreOpt);
+        parser.addOption(getOpt);
+        parser.addOption(exportFileOpt);
         parser.process(app);
 
 
@@ -764,12 +770,24 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (parser.isSet(restoreOpt)) {      restoreExpiredTokensFromBackup();
+    }
+
+    if (parser.isSet(exportOpt) && parser.isSet(eTimeOpt)  && parser.isSet(exportOpt) ) {
+        QString exportfile=parser.value(exportOpt);
+        generateTokenFile(exportfile,parser.value(eTimeOpt).toInt() );
+    }
+
+     if (parser.isSet(getOpt)){
+   qDebug() << QString::number(getTokensLeft());
+}
+
     if (parser.isSet(headlessOpt)) {        return 0;  // Skip GUI
     }
 
-
     // Reset expired tokens at app startup
     restoreExpiredTokensFromBackup();
+
 
     auto *output = new QPlainTextEdit;
     output->setReadOnly(true);
