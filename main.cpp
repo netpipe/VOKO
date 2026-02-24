@@ -387,10 +387,12 @@ void restoreExpiredTokensFromBackup() {
     }
 }
 
-void bruteForceTokenPool(int total = 100000, int batchSize = 1000) {
-    QMessageBox::StandardButton reply;
+void bruteForceTokenPool(int total = 100000, int batchSize = 1000,bool GUI=true) {
+  QMessageBox::StandardButton reply;
+  if (GUI){
     reply = QMessageBox::question(0, "Question Are You Sure ?", "Generate New Tokens ?",
-                                  QMessageBox::Yes|QMessageBox::No);
+                               QMessageBox::Yes|QMessageBox::No);
+}else   {reply = QMessageBox::Yes;}
     if (reply == QMessageBox::Yes) {
 
     //sql automatically removes doubles
@@ -644,6 +646,7 @@ int main(int argc, char *argv[]) {
 
         // Define options
         QCommandLineOption generateAllOpt("generate-all", "Generate all tokens");
+        QCommandLineOption genOpt("genAmount", "number of tokens to make", "token");
         QCommandLineOption selectValidOpt("select-valid", "Select valid tokens");
         QCommandLineOption redeemOpt("redeem", "Redeem a token", "token");
         QCommandLineOption exportOpt("export", "Export N tokens", "count");
@@ -664,6 +667,7 @@ int main(int argc, char *argv[]) {
         parser.addOption(headlessOpt);
         parser.addOption(returnOpt);
         parser.addOption(qrOpt);
+        parser.addOption(genOpt);
         parser.process(app);
 
 
@@ -688,13 +692,20 @@ int main(int argc, char *argv[]) {
 
     if (parser.isSet(returnOpt)){chkReturn->setChecked(1);}
     // Command-line actions
-    if (parser.isSet(generateAllOpt)) {
-        bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
-        qDebug() << "Generated all tokens.";    }
+    if (parser.isSet(generateAllOpt) && parser.isSet(genOpt)) {
+        bruteForceTokenPool(parser.value(genOpt).toInt()*1.5,1000,0);
+        QSqlQuery q;
+        q.exec("DELETE FROM valid_tokens");
+        QSqlQuery insert;
+        insert.prepare("INSERT INTO valid_tokens (token) SELECT token FROM all_tokens ORDER BY RANDOM() LIMIT :count");
+        insert.bindValue(":count", parser.value(genOpt).toInt());
+        insert.exec();
+       //qDebug() << "Selected valid tokens.";
+        qDebug() << "Generated/Selected all tokens.";    }
 
-    if (parser.isSet(selectValidOpt)) {
-        selectValidTokens(tokengen->text().toInt());
-        qDebug() << "Selected valid tokens.";    }
+   // if (parser.isSet(selectValidOpt)) {
+       // selectValidTokens(parser.value(genOpt));
+        //qDebug() << "Selected valid tokens.";    }
 
     if (parser.isSet(redeemOpt) && parser.isSet(voteOpt) ) {
         QString token = parser.value(redeemOpt);
@@ -877,7 +888,7 @@ int main(int argc, char *argv[]) {
         output->appendPlainText(result);
     });
     QObject::connect(genAllBtn, &QPushButton::clicked, [&]() {
-        bruteForceTokenPool(tokengen->text().toInt()*1.5,1000);
+        bruteForceTokenPool(tokengen->text().toInt()*1.5,1000,1);
         output->appendPlainText("Generated all tokens.");
     });
     QObject::connect(genValidBtn, &QPushButton::clicked, [&]() {
